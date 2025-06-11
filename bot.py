@@ -191,22 +191,52 @@ async def main():
 
     if not arquivos:
         print("❌ Nenhuma conta disponível na pasta de sessões.")
+        numero = input("📱 Digite o número com DDD (ex: +5511999999999): ").strip()
+        nova_session = os.path.join(pasta_sessoes, numero)
+        client = TelegramClient(nova_session, api_id, api_hash)
+        await client.start(phone=numero)
+        await client.disconnect()
+        print("✅ Nova conta criada com sucesso.")
         return
 
     if len(arquivos) == 1:
-        print(f"\n🧾 Apenas uma conta encontrada: {arquivos[0]}")
+        conta_unica = arquivos[0]
+        print(f"\n🧾 Apenas uma conta encontrada: {conta_unica}")
         print("0. Criar nova conta")
-        print("1. Usar conta1")
+        print(f"1. Usar {conta_unica}")
         escolha = input("Escolha uma opção: ").strip()
 
         if escolha == "0":
-            numero = input("Digite o número com DDD: ").strip()
+            numero = input("📱 Digite o número com DDD (ex: +5511999999999): ").strip()
             nova_session = os.path.join(pasta_sessoes, numero)
             client = TelegramClient(nova_session, api_id, api_hash)
             await client.start(phone=numero)
             await client.disconnect()
             print("✅ Nova conta criada com sucesso.")
             return
+
+        usar_proxy = input("🔐 Deseja usar proxy? (s/n): ").lower()
+        proxy = None
+        if usar_proxy == 's':
+            proxies = carregar_proxys()
+            print("0. ➕ Adicionar novo proxy")
+            for i, p in enumerate(proxies):
+                print(f"{i + 1}. {p}")
+            escolha_proxy = input("Escolha o número do proxy: ").strip()
+            if escolha_proxy == "0":
+                novo = input("Digite o novo proxy (host:porta:user:senha): ").strip()
+                if novo and len(novo.split(":")) == 4:
+                    with open(pasta_proxys, 'a', encoding='utf-8') as f:
+                        f.write(novo + "\n")
+                    linha = novo.split(":")
+                    proxy = ('socks5', linha[0], int(linha[1]), True, linha[2], linha[3])
+            elif escolha_proxy.isdigit() and 1 <= int(escolha_proxy) <= len(proxies):
+                linha = proxies[int(escolha_proxy) - 1].split(":")
+                proxy = ('socks5', linha[0], int(linha[1]), True, linha[2], linha[3])
+
+        await extrair_usuarios(conta_unica, proxy)
+        return
+
 
         usar_proxy = input("🔐 Deseja usar proxy? (s/n): ").lower()
         proxy = None
